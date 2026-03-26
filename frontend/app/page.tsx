@@ -17,6 +17,7 @@ import {
   Star,
   ArrowRight,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function ResumePlatformUI() {
   const [scrollY, setScrollY] = useState(0);
@@ -102,6 +103,7 @@ export default function ResumePlatformUI() {
     { number: '03', title: 'Match Jobs', description: 'Discover perfectly matched opportunities' },
     { number: '04', title: 'Track & Apply', description: 'Manage applications and get hired faster' },
   ];
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">
@@ -166,9 +168,8 @@ export default function ResumePlatformUI() {
       <section id="home" className="relative z-10 px-6 pt-30 pb-32">
         <div className="max-w-7xl mx-auto text-center">
           <div
-            className={`transition-all duration-1000 delay-100 ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}
+            className={`transition-all duration-1000 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500/20 border border-violet-500/30 rounded-full mb-8">
               <Star className="w-4 h-4 text-violet-400" />
@@ -192,7 +193,10 @@ export default function ResumePlatformUI() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-violet-500/50 transition-all hover:scale-105 flex items-center gap-2 overflow-hidden">
+              <button
+                onClick={() => router.push('/resume-upload')}
+                className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-violet-500/50 transition-all hover:scale-105 flex items-center gap-2 overflow-hidden"
+              >
                 <span className="absolute inset-0 animate-shimmer"></span>
                 <span className="relative">Upload Resume Now</span>
                 <ChevronRight className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -237,13 +241,12 @@ export default function ResumePlatformUI() {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className={`group bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:border-violet-500/50 transition-all hover:scale-[1.02] relative overflow-hidden ${
-                  featuresInView
+                className={`group bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:border-violet-500/50 transition-all hover:scale-[1.02] relative overflow-hidden ${featuresInView
                     ? index % 2 === 0
                       ? 'animate-slide-in-left'
                       : 'animate-slide-in-right'
                     : 'opacity-0'
-                }`}
+                  }`}
                 style={{ animationDelay: `${index * 150}ms` }}
               >
                 <div className="relative w-14 h-14 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
