@@ -1,9 +1,12 @@
 'use client';
 
 import { Star } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 
 export default function NavbarUI() {
+    const router = useRouter();
+
     const navItems = [
   { name: "Home", link: "/#home" },
   { name: "Features", link: "/#features" },
@@ -40,9 +43,12 @@ export default function NavbarUI() {
                 {/* Auth Buttons (UI only) */}
                 <div className="flex gap-4">
 
-                    <button className="relative px-6 py-2.5 rounded-4xl border border-white/20 bg-white/5 backdrop-blur-md text-white text-sm sm:text-base font-medium transition-all duration-300 hover:bg-white/10 hover:border-white/30 hover:shadow-lg hover:scale-105">
-                        Sign in
-                    </button>
+                    <button 
+  onClick={() => router.push('/signin')}
+  className="relative px-6 py-2.5 rounded-4xl border border-white/20 bg-white/5 backdrop-blur-md text-white text-sm sm:text-base font-medium transition-all duration-300 hover:bg-white/10 hover:border-white/30 hover:shadow-lg hover:scale-105"
+>
+  Sign in
+</button>
                 </div>
             </div>
         </nav>
