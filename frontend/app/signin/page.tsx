@@ -257,7 +257,8 @@ router.push("/#home");
                   <div className="flex-1 h-px bg-white/10" />
                 </div>
 
-                {/* Google OAuth */}
+                {/*
+                 Google OAuth 
                 <button
                   type="button"
                   className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/5 border border-white/10 rounded-xl text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all hover:scale-[1.02]"
@@ -270,6 +271,7 @@ router.push("/#home");
                   </svg>
                   Continue with Google
                 </button>
+                */}
               </form>
 
               {/* Sign Up Link */}

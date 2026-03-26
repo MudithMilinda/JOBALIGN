@@ -357,7 +357,7 @@ export default function SignUpPage() {
                                     <div className="flex-1 h-px bg-white/10" />
                                 </div>
 
-                                {/* Google */}
+                                {/* Google 
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/5 border border-white/10 rounded-xl text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all hover:scale-[1.02]"
@@ -370,6 +370,7 @@ export default function SignUpPage() {
                                     </svg>
                                     Continue with Google
                                 </button>
+                                */}
                             </form>
 
                             {/* Sign In Link */}

@@ -194,7 +194,14 @@ export default function ResumePlatformUI() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={() => router.push('/resume-upload')}
+                onClick={() => {
+                  const token = localStorage.getItem("token");
+                  if (token) {
+                    router.push('/resume-upload');
+                  } else {
+                    router.push('/signin');
+                  }
+                }}
                 className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-violet-500/50 transition-all hover:scale-105 flex items-center gap-2 overflow-hidden"
               >
                 <span className="absolute inset-0 animate-shimmer"></span>
@@ -242,10 +249,10 @@ export default function ResumePlatformUI() {
               <div
                 key={index}
                 className={`group bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:border-violet-500/50 transition-all hover:scale-[1.02] relative overflow-hidden ${featuresInView
-                    ? index % 2 === 0
-                      ? 'animate-slide-in-left'
-                      : 'animate-slide-in-right'
-                    : 'opacity-0'
+                  ? index % 2 === 0
+                    ? 'animate-slide-in-left'
+                    : 'animate-slide-in-right'
+                  : 'opacity-0'
                   }`}
                 style={{ animationDelay: `${index * 150}ms` }}
               >
