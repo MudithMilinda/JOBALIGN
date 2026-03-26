@@ -40,13 +40,50 @@ export default function SignInPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    router.push('/dashboard');
-  };
+  e.preventDefault();
+
+  if (!validate()) return;
+
+  setIsLoading(true);
+
+  try {
+    const res = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: form.email,
+        password: form.password,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setErrors({
+        email: data.msg || "Login failed",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // ✅ Save token (VERY IMPORTANT)
+localStorage.setItem("token", data.token);
+
+// ✅ ADD THIS LINE — user data save 
+localStorage.setItem("user", JSON.stringify(data.user));
+
+// ✅ Redirect
+router.push("/#home");
+
+  } catch (error) {
+    console.error("Login error:", error);
+    setErrors({ email: "Server error" });
+  }
+
+  setIsLoading(false);
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">

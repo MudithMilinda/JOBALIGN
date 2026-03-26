@@ -1,61 +1,75 @@
+// server.js
 import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import cors from "cors";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import Anthropic from "@anthropic-ai/sdk";
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+
+// ─── Multer setup for file uploads ─────────────
 const upload = multer({ dest: "uploads/", limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Validate API key on startup
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error("❌  ANTHROPIC_API_KEY is missing in .env");
-  process.exit(1);
-}
+// ─── Ensure uploads folder exists ─────────────
+if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// Allow requests from Next.js frontend
+// ─── Middleware ───────────────────────────────
 app.use(cors({
-  origin: ["http://localhost:3001", "http://localhost:3000", "http://localhost:3002"],
+  origin: ["http://localhost:3000", "http://localhost:3001"], // your frontend URLs
   methods: ["GET", "POST"],
 }));
-
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Ensure uploads dir exists
-if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+// ─── MongoDB connection ───────────────────────
+mongoose.set("strictQuery", false);
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  });
 
-// ─── Helper: build the job-search prompt ──────────────────────────────────────
+// ─── User Model ───────────────────────────────
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true },
+  role: { type: String, default: "user" }, // optional role field
+}, { timestamps: true });
+
+const User = mongoose.models.User || mongoose.model("User", userSchema);
+
+// ─── Anthropic Client ────────────────────────
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error("❌ ANTHROPIC_API_KEY is missing in .env");
+  process.exit(1);
+}
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// ─── Helper: Build Job Search Prompt ─────────
 function buildJobSearchPrompt(location, jobTypes, extraNotes) {
-  return `You are an expert career advisor and job market researcher. A candidate has uploaded their CV/resume. Your task is to:
+  return `You are an expert career advisor and job market researcher. A candidate has uploaded their CV/resume. Your task:
 
-1. **Extract & analyze** the candidate's skills, experience level, tech stack, education, and project highlights from the CV.
-2. **Generate 20 highly targeted job openings** that match their profile. For each job include:
-   - Job title
-   - Company name (real companies in their region when possible)
-   - Location (${location || "Sri Lanka / Remote"})
-   - Job type preference: ${jobTypes || "internship, entry-level, junior"}
-   - Match quality: "Strong fit" or "Good fit"
-   - 3-5 relevant skill tags from the candidate's own skill set
-   - A direct application URL (use real job boards: itpro.lk, linkedin.com/jobs, rooster.jobs, careers pages)
-   - A one-sentence reason WHY this role matches the candidate
+1. Extract skills, experience, education, and project highlights.
+2. Generate 20 targeted job openings with:
+   - Job title, Company, Location (${location || "Sri Lanka / Remote"})
+   - Job type: ${jobTypes || "internship, entry-level, junior"}
+   - Match quality, 3-5 relevant skills, application URL, reason
+3. Provide a candidate summary (2-3 sentences), top 3 skills, 2-3 resume tips
 
-3. Also provide:
-   - A brief **candidate summary** (2-3 sentences) highlighting their strongest assets
-   - **Top 3 standout skills** from their profile
-   - **2-3 resume improvement tips** specific to their target roles
+${extraNotes ? `Additional notes: ${extraNotes}` : ""}
 
-${extraNotes ? `Additional context from user: ${extraNotes}` : ""}
-
-Respond ONLY with valid JSON in exactly this structure:
+Respond ONLY in JSON like this:
 {
   "candidateSummary": "string",
   "topSkills": ["skill1", "skill2", "skill3"],
@@ -68,7 +82,7 @@ Respond ONLY with valid JSON in exactly this structure:
       "location": "string",
       "type": "fullstack|qa|mobile|frontend|backend|other",
       "matchQuality": "Strong fit|Good fit",
-      "tags": ["tag1", "tag2", "tag3"],
+      "tags": ["tag1","tag2","tag3"],
       "url": "https://...",
       "reason": "string"
     }
@@ -76,11 +90,72 @@ Respond ONLY with valid JSON in exactly this structure:
 }`;
 }
 
-// ─── Route: analyze CV + search jobs ──────────────────────────────────────────
-app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No CV file uploaded." });
+// ─── Route: User Signup ───────────────────────
+app.post("/api/auth/signup", async (req, res) => {
+  const { name, email, password } = req.body;
+  try {
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ msg: "User already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ name, email, password: hashedPassword });
+    await user.save();
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    res.status(201).json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
   }
+});
+
+// ─── LOGIN ROUTE ───────────────────────────────
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // 1. Check user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ msg: "Invalid email or password" });
+    }
+
+    // 2. Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: "Invalid email or password" });
+    }
+
+    // 3. Create JWT
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // 4. Send response
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// ─── Route: CV Upload & Job Search ───────────
+app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No CV file uploaded." });
 
   const { location, jobTypes, extraNotes } = req.body;
   const filePath = req.file.path;
@@ -89,23 +164,16 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
   try {
     let messageContent = [];
 
-    // Handle PDF vs image CV
     if (mimeType === "application/pdf") {
       const pdfData = fs.readFileSync(filePath).toString("base64");
       messageContent = [
-        {
-          type: "document",
-          source: { type: "base64", media_type: "application/pdf", data: pdfData },
-        },
+        { type: "document", source: { type: "base64", media_type: "application/pdf", data: pdfData } },
         { type: "text", text: buildJobSearchPrompt(location, jobTypes, extraNotes) },
       ];
     } else if (mimeType.startsWith("image/")) {
       const imgData = fs.readFileSync(filePath).toString("base64");
       messageContent = [
-        {
-          type: "image",
-          source: { type: "base64", media_type: mimeType, data: imgData },
-        },
+        { type: "image", source: { type: "base64", media_type: mimeType, data: imgData } },
         { type: "text", text: buildJobSearchPrompt(location, jobTypes, extraNotes) },
       ];
     } else {
@@ -113,7 +181,7 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
       return res.status(400).json({ error: "Please upload a PDF or image file." });
     }
 
-    // Stream response from Claude
+    // ─── SSE Streaming ───────────────────────
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -127,25 +195,21 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
     let fullText = "";
 
     for await (const chunk of stream) {
-      if (
-        chunk.type === "content_block_delta" &&
-        chunk.delta.type === "text_delta"
-      ) {
+      if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
         fullText += chunk.delta.text;
         res.write(`data: ${JSON.stringify({ type: "progress", text: chunk.delta.text })}\n\n`);
       }
     }
 
-    // Parse and send final result
+    // ─── Parse JSON Response ─────────────────
     const clean = fullText.replace(/```json|```/g, "").trim();
     let parsed;
     try {
       parsed = JSON.parse(clean);
     } catch {
-      // Try to extract JSON from text
       const match = clean.match(/\{[\s\S]*\}/);
       if (match) parsed = JSON.parse(match[0]);
-      else throw new Error("Could not parse JSON response from Claude.");
+      else throw new Error("Could not parse JSON from Anthropic");
     }
 
     res.write(`data: ${JSON.stringify({ type: "result", data: parsed })}\n\n`);
@@ -153,28 +217,15 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
     res.end();
 
   } catch (err) {
-    const msg = err?.message || "Unknown server error";
-    console.error("❌ Error:", msg);
-
-    // Headers not sent yet → plain JSON error response
-    if (!res.headersSent) {
-      return res.status(500).json({ error: msg });
-    }
-
-    // Headers already sent (SSE started) → send error event then close
-    try {
-      res.write(`data: ${JSON.stringify({ type: "error", message: msg })}\n\n`);
-      res.end();
-    } catch (_) {
-      // client already disconnected
-    }
+    console.error("❌ Error:", err.message);
+    if (!res.headersSent) return res.status(500).json({ error: err.message });
+    try { res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`); res.end(); } catch (_) {}
   } finally {
-    // Always clean up the uploaded temp file
-    try {
-      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    } catch (_) {}
+    // ─── Cleanup uploaded file ─────────────
+    try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
   }
 });
 
+// ─── Start Server ─────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅  CV Job Search running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
