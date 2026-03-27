@@ -13,7 +13,7 @@ router.post("/save", protect, async (req, res) => {
     const { fileName, candidateSummary, topSkills, resumeTips, jobs } = req.body;
 
     const analysis = new Analysis({
-      user:             req.user.id,   // JWT එකෙන් ආපු user id
+      user:             req.user.id,   // JWT user id
       fileName:         fileName || "",
       candidateSummary: candidateSummary || "",
       topSkills:        topSkills || [],

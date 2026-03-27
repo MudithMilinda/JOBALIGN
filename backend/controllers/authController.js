@@ -23,7 +23,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// ✅ LOGIN function එක add කළා
+// ✅ LOGIN function add 
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -39,7 +39,7 @@ export const loginUser = async (req, res) => {
     // Token generate
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    // ✅ user object එකත් return කරනවා — Navbar එකට ඕනේ
+    // ✅ user object  return  — Navbar 
     res.status(200).json({
       token,
       user: {
