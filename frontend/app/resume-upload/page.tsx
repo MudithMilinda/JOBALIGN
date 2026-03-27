@@ -15,7 +15,6 @@ import {
   Star
 } from 'lucide-react';
 
-// ── Types ──────────────────────────────────────────────────────────────────────
 interface Job {
   id: number;
   title: string;
@@ -48,16 +47,16 @@ const JOB_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function ResumeUploadPage() {
-  const [isDragging, setIsDragging]     = useState(false);
-  const [file, setFile]                 = useState<File | null>(null);
-  const [analyzing, setAnalyzing]       = useState(false);
+  const [isDragging, setIsDragging]         = useState(false);
+  const [file, setFile]                     = useState<File | null>(null);
+  const [analyzing, setAnalyzing]           = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [progressLabel, setProgressLabel]   = useState('Uploading CV...');
-  const [result, setResult]             = useState<AnalysisResult | null>(null);
-  const [error, setError]               = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [result, setResult]                 = useState<AnalysisResult | null>(null);
+  const [error, setError]                   = useState('');
+  const [activeFilter, setActiveFilter]     = useState('all');
+  const [saveStatus, setSaveStatus]         = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // ── File helpers ─────────────────────────────────────────────────────────────
   const handleDragOver  = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = () => setIsDragging(false);
 
@@ -73,7 +72,6 @@ export default function ResumeUploadPage() {
     if (f) { setFile(f); sendToBackend(f); }
   };
 
-  // ── Fake progress bar while streaming ────────────────────────────────────────
   const startProgressAnimation = () => {
     const labels = [
       'Uploading CV...',
@@ -91,13 +89,49 @@ export default function ResumeUploadPage() {
     return iv;
   };
 
-  // ── Main API call ─────────────────────────────────────────────────────────────
+  // ✅ Save result to MongoDB via backend
+  const saveAnalysisToMongo = async (analysisResult: AnalysisResult, fileName: string) => {
+    setSaveStatus('saving');
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // Not logged in — skip save silently
+      setSaveStatus('idle');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/analysis/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,   // ✅ JWT token
+        },
+        body: JSON.stringify({
+          fileName,
+          candidateSummary: analysisResult.candidateSummary,
+          topSkills:        analysisResult.topSkills,
+          resumeTips:       analysisResult.resumeTips,
+          jobs:             analysisResult.jobs,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Save failed");
+
+      setSaveStatus('saved');
+    } catch (err) {
+      console.error("Failed to save analysis:", err);
+      setSaveStatus('error');
+    }
+  };
+
   const sendToBackend = async (selectedFile: File) => {
     setAnalyzing(true);
     setResult(null);
     setError('');
     setUploadProgress(0);
     setActiveFilter('all');
+    setSaveStatus('idle');
 
     const progressInterval = startProgressAnimation();
 
@@ -113,7 +147,6 @@ export default function ResumeUploadPage() {
       });
 
       if (!resp.ok) {
-        // Safely parse error — server might return plain text in some edge cases
         const contentType = resp.headers.get('content-type') ?? '';
         let message = `Server error (${resp.status})`;
         if (contentType.includes('application/json')) {
@@ -125,7 +158,6 @@ export default function ResumeUploadPage() {
         throw new Error(message);
       }
 
-      // Read the SSE stream
       const reader = resp.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -145,6 +177,9 @@ export default function ResumeUploadPage() {
             setUploadProgress(100);
             setProgressLabel('Complete!');
             setResult(payload.data as AnalysisResult);
+
+            // ✅ Auto-save to MongoDB
+            await saveAnalysisToMongo(payload.data as AnalysisResult, selectedFile.name);
           }
           if (payload.type === 'error') throw new Error(payload.message);
         }
@@ -157,7 +192,6 @@ export default function ResumeUploadPage() {
     }
   };
 
-  // ── Filter jobs ───────────────────────────────────────────────────────────────
   const filteredJobs = result?.jobs.filter(
     j => activeFilter === 'all' || j.type === activeFilter
   ) ?? [];
@@ -166,10 +200,8 @@ export default function ResumeUploadPage() {
     ? ['all', ...new Set(result.jobs.map(j => j.type))]
     : [];
 
-  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-      {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 -right-40 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
@@ -181,7 +213,6 @@ export default function ResumeUploadPage() {
       <div className="relative z-10 px-6 py-12">
         <div className="max-w-6xl mx-auto">
 
-          {/* Header */}
           <div className="text-center mb-12 mt-20">
             <h1 className="text-5xl md:text-6xl font-black mb-4">
               Upload Your
@@ -190,11 +221,8 @@ export default function ResumeUploadPage() {
             <p className="text-xl text-slate-400">Let AI analyze your resume and find the perfect job matches in seconds</p>
           </div>
 
-          {/* ── Upload + Info (shown when no result yet) ── */}
           {!result && (
             <div className="grid lg:grid-cols-2 gap-8">
-
-              {/* Drop Zone */}
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -242,7 +270,6 @@ export default function ResumeUploadPage() {
                 )}
               </div>
 
-              {/* Info Panel */}
               <div className="space-y-6">
                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
                   <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -281,7 +308,6 @@ export default function ResumeUploadPage() {
             </div>
           )}
 
-          {/* ── Error ── */}
           {error && (
             <div className="mt-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-red-400 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -289,18 +315,31 @@ export default function ResumeUploadPage() {
             </div>
           )}
 
-          {/* ── Results ── */}
           {result && (
             <div className="space-y-8 animate-fade-in-up">
 
-              {/* Success header */}
               <div className="text-center">
                 <Brain className="w-16 h-16 mx-auto text-violet-400 mb-4" />
                 <h2 className="text-3xl font-bold mb-2">Analysis Complete!</h2>
                 <p className="text-slate-400">Found {result.jobs.length} matched opportunities for you</p>
+
+                {/* ✅ Save status indicator */}
+                {saveStatus === 'saving' && (
+                  <p className="text-sm text-slate-400 mt-2 flex items-center justify-center gap-2">
+                    <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin inline-block" />
+                    Saving to your profile...
+                  </p>
+                )}
+                {saveStatus === 'saved' && (
+                  <p className="text-sm text-green-400 mt-2 flex items-center justify-center gap-1">
+                    <Check className="w-4 h-4" /> Saved to your profile
+                  </p>
+                )}
+                {saveStatus === 'error' && (
+                  <p className="text-sm text-red-400 mt-2">Could not save — please sign in</p>
+                )}
               </div>
 
-              {/* Candidate Summary Card */}
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
                 <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-violet-400" /> Candidate Summary
@@ -325,7 +364,6 @@ export default function ResumeUploadPage() {
                 </div>
               </div>
 
-              {/* Filter Row */}
               <div className="flex items-center gap-2 flex-wrap">
                 <Filter className="w-4 h-4 text-slate-400" />
                 {jobTypes.map(type => (
@@ -346,7 +384,6 @@ export default function ResumeUploadPage() {
                 ))}
               </div>
 
-              {/* Jobs Grid */}
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredJobs.map(job => (
                   <div
@@ -396,10 +433,9 @@ export default function ResumeUploadPage() {
                 ))}
               </div>
 
-              {/* Upload another */}
               <div className="text-center pt-4">
                 <button
-                  onClick={() => { setResult(null); setFile(null); setError(''); }}
+                  onClick={() => { setResult(null); setFile(null); setError(''); setSaveStatus('idle'); }}
                   className="px-6 py-2.5 border border-white/10 rounded-xl text-sm text-slate-400 hover:text-white hover:border-white/20 transition-all"
                 >
                   Upload a different resume

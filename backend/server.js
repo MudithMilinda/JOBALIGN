@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Anthropic from "@anthropic-ai/sdk";
+import analysisRoutes from "./routes/analysisRoutes.js"; // ✅ Added
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
 // ─── Middleware ───────────────────────────────
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001"], // your frontend URLs
+  origin: ["http://localhost:3000", "http://localhost:3001"],
   methods: ["GET", "POST"],
 }));
 app.use(express.json());
@@ -44,7 +45,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
-  role: { type: String, default: "user" }, // optional role field
+  role: { type: String, default: "user" },
 }, { timestamps: true });
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);
@@ -113,45 +114,30 @@ app.post("/api/auth/signup", async (req, res) => {
   }
 });
 
-// ─── LOGIN ROUTE ───────────────────────────────
+// ─── Route: User Login ────────────────────────
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    // 1. Check user
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ msg: "Invalid email or password" });
-    }
+    if (!user) return res.status(400).json({ msg: "Invalid email or password" });
 
-    // 2. Check password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid email or password" });
-    }
+    if (!isMatch) return res.status(400).json({ msg: "Invalid email or password" });
 
-    // 3. Create JWT
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    // 4. Send response
     res.json({
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
+      user: { id: user._id, name: user.name, email: user.email },
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+// ─── Route: Analysis (save & history) ────────
+app.use("/api/analysis", analysisRoutes); // ✅ Added
 
 // ─── Route: CV Upload & Job Search ───────────
 app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
@@ -221,7 +207,6 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
     if (!res.headersSent) return res.status(500).json({ error: err.message });
     try { res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`); res.end(); } catch (_) {}
   } finally {
-    // ─── Cleanup uploaded file ─────────────
     try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
   }
 });
