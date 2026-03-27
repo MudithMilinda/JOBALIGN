@@ -303,27 +303,40 @@ export default function ResumePlatformUI() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* pricing Section */}
       <section id="pricing" className="relative z-10 px-6 py-20">
         <div className="max-w-4xl mx-auto text-center">
           <div className="relative bg-gradient-to-br from-violet-600/20 to-cyan-600/20 backdrop-blur-sm border border-violet-500/30 rounded-3xl p-12 overflow-hidden">
+
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Transform Your
+              Choose the Plan That Fits Your
               <br />
               <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent animate-rotate-gradient">
-                Job Search?
+                Career Goals
               </span>
             </h2>
-            <p className="text-xl text-slate-300 mb-8">
-              Join thousands of professionals who've found their perfect match
+
+            <p className="text-base text-slate-500 mb-8">
+              Start free, upgrade anytime. Unlock powerful AI tools to optimize your resume,
+              match with the right jobs, and accelerate your hiring success.
             </p>
+
+            {/* Highlight */}
+            <div className="mb-8 flex justify-center">
+              <div className="px-4 py-2 bg-violet-500/20 border border-violet-500/30 rounded-full text-sm text-violet-300">
+                💡 Most users choose Standard for best results
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="relative px-8 py-4 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-violet-500/50 transition-all hover:scale-105">
-                Start Free Trial
+
+              <button
+                onClick={() => router.push('/pricelist')}
+                className="relative px-8 py-4 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-violet-500/50 transition-all hover:scale-105"
+              >
+                View Pricing Plans
               </button>
-              <button className="relative px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-lg font-semibold hover:bg-white/20 transition-all hover:scale-105">
-                Schedule Demo
-              </button>
+
             </div>
           </div>
         </div>
