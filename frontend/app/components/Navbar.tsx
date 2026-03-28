@@ -19,15 +19,34 @@ export default function NavbarUI() {
         { name: "Pricing", link: "/#pricing" },
     ];
 
-    // ✅ Check login status
-    useEffect(() => {
+    // ✅ Helper to sync auth state from localStorage
+    const syncAuthState = () => {
         const token = localStorage.getItem("token");
         const storedUser = localStorage.getItem("user");
 
         if (token && storedUser) {
             setIsLoggedIn(true);
             setUser(JSON.parse(storedUser));
+        } else {
+            setIsLoggedIn(false);
+            setUser(null);
         }
+    };
+
+    // ✅ Check login status on mount + listen for storage changes
+    useEffect(() => {
+        syncAuthState();
+
+        // Listen for storage events (fires when other tabs change localStorage)
+        window.addEventListener("storage", syncAuthState);
+
+        // Listen for custom "auth-change" event (fires within same tab)
+        window.addEventListener("auth-change", syncAuthState);
+
+        return () => {
+            window.removeEventListener("storage", syncAuthState);
+            window.removeEventListener("auth-change", syncAuthState);
+        };
     }, []);
 
     // ✅ Close dropdown when clicking outside
@@ -46,7 +65,9 @@ export default function NavbarUI() {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setIsLoggedIn(false);
+        setUser(null);
         setDropdownOpen(false);
+        window.dispatchEvent(new Event("auth-change"));
         router.push("/");
     };
 
