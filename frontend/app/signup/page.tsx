@@ -48,6 +48,8 @@ export default function SignUpPage() {
     const validate = () => {
         const newErrors: Record<string, string> = {};
         if (!form.name.trim()) newErrors.name = 'Full name is required';
+        // ✅ Add max length validation for name (100 characters)
+        else if (form.name.trim().length > 100) newErrors.name = 'Name must be 100 characters or less';
         if (!form.email) newErrors.email = 'Email is required';
         else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Invalid email address';
         if (!form.password) newErrors.password = 'Password is required';
@@ -65,15 +67,23 @@ export default function SignUpPage() {
 
         setIsLoading(true);
         try {
+            // ✅ Log signup data (name with numbers supported)
+            console.log("📝 [SIGNUP] Submitting form data:", { name: form.name, email: form.email, nameLength: form.name.length });
+
+            const signupData = { name: form.name, email: form.email, password: form.password };
+            console.log("📤 [SIGNUP] Sending to backend:", { name: form.name, email: form.email });
+
             const res = await fetch("http://localhost:5000/api/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
+                body: JSON.stringify(signupData),
             });
 
             const data = await res.json();
 
             if (res.ok) {
+                console.log("✅ [SIGNUP] Backend response successful:", data.user);
+
                 // ✅ Save token
                 localStorage.setItem("token", data.token);
 
@@ -81,16 +91,18 @@ export default function SignUpPage() {
                 // Use data.user if backend returns it, otherwise build from form
                 const userObj = data.user ?? { name: form.name, email: form.email };
                 localStorage.setItem("user", JSON.stringify(userObj));
+                console.log("💾 [SIGNUP] User saved to localStorage:", userObj);
 
                 // ✅ Notify Navbar (same tab) that auth state changed
                 window.dispatchEvent(new Event("auth-change"));
 
                 router.push("/#home");
             } else {
+                console.error("⚠️  [SIGNUP] Backend error:", data.msg);
                 alert(data.msg || "Signup failed");
             }
         } catch (err) {
-            console.error(err);
+            console.error("❌ [SIGNUP] Request failed:", err);
             alert('Server error');
         }
         setIsLoading(false);
@@ -252,12 +264,12 @@ export default function SignUpPage() {
                                                 Strength:{' '}
                                                 <span
                                                     className={`font-medium ${strength <= 1
-                                                            ? 'text-red-400'
-                                                            : strength === 2
-                                                                ? 'text-yellow-400'
-                                                                : strength === 3
-                                                                    ? 'text-cyan-400'
-                                                                    : 'text-green-400'
+                                                        ? 'text-red-400'
+                                                        : strength === 2
+                                                            ? 'text-yellow-400'
+                                                            : strength === 3
+                                                                ? 'text-cyan-400'
+                                                                : 'text-green-400'
                                                         }`}
                                                 >
                                                     {strengthLabel[strength]}
@@ -311,8 +323,8 @@ export default function SignUpPage() {
                                         <div
                                             onClick={() => setAgreed(!agreed)}
                                             className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${agreed
-                                                    ? 'bg-gradient-to-br from-violet-600 to-cyan-600 border-transparent'
-                                                    : 'border-white/20 group-hover:border-violet-500/50'
+                                                ? 'bg-gradient-to-br from-violet-600 to-cyan-600 border-transparent'
+                                                : 'border-white/20 group-hover:border-violet-500/50'
                                                 }`}
                                         >
                                             {agreed && <CheckCircle2 className="w-3 h-3 text-white" />}

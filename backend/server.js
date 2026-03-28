@@ -10,14 +10,14 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Anthropic from "@anthropic-ai/sdk";
-import analysisRoutes from "./routes/analysisRoutes.js"; // ✅ Added
+import analysisRoutes from "./routes/analysisRoutes.js";
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-// ─── Multer setup for file uploads ─────────────
+// ─── Multer setup ─────────────────────────────
 const upload = multer({ dest: "uploads/", limits: { fileSize: 10 * 1024 * 1024 } });
 
 // ─── Ensure uploads folder exists ─────────────
@@ -50,7 +50,17 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 
-// ─── Anthropic Client ────────────────────────
+// ─── Analysis Model ───────────────────────────
+// ✅ Used to count total jobs analyzed across all users
+// Make sure this matches the schema in your analysisRoutes.js
+const analysisSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  jobs: { type: Array, default: [] },
+}, { timestamps: true });
+
+const Analysis = mongoose.models.Analysis || mongoose.model("Analysis", analysisSchema);
+
+// ─── Anthropic Client ─────────────────────────
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error("❌ ANTHROPIC_API_KEY is missing in .env");
   process.exit(1);
@@ -136,8 +146,40 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+// ─── Route: Live User Count ───────────────────
+app.get("/api/stats/user-count", async (req, res) => {
+  try {
+    const count = await User.countDocuments();
+    res.json({ count });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// ─── Route: Total Jobs Analyzed ──────────────
+// ✅ Aggregates the total number of jobs across all saved analyses
+app.get("/api/stats/jobs-analyzed", async (req, res) => {
+  try {
+    const result = await Analysis.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalJobs: { $sum: { $size: "$jobs" } },
+        },
+      },
+    ]);
+
+    const total = result.length > 0 ? result[0].totalJobs : 0;
+    res.json({ count: total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
 // ─── Route: Analysis (save & history) ────────
-app.use("/api/analysis", analysisRoutes); // ✅ Added
+app.use("/api/analysis", analysisRoutes);
 
 // ─── Route: CV Upload & Job Search ───────────
 app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
@@ -167,7 +209,7 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
       return res.status(400).json({ error: "Please upload a PDF or image file." });
     }
 
-    // ─── SSE Streaming ───────────────────────
+    // ─── SSE Streaming ────────────────────────
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -187,7 +229,7 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
       }
     }
 
-    // ─── Parse JSON Response ─────────────────
+    // ─── Parse JSON Response ──────────────────
     const clean = fullText.replace(/```json|```/g, "").trim();
     let parsed;
     try {
@@ -205,9 +247,14 @@ app.post("/api/search-jobs", upload.single("cv"), async (req, res) => {
   } catch (err) {
     console.error("❌ Error:", err.message);
     if (!res.headersSent) return res.status(500).json({ error: err.message });
-    try { res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`); res.end(); } catch (_) {}
+    try {
+      res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`);
+      res.end();
+    } catch (_) {}
   } finally {
-    try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
+    try {
+      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (_) {}
   }
 });
 
