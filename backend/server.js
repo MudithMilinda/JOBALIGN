@@ -42,9 +42,11 @@ mongoose.connect(process.env.MONGO_URI)
 
 // ─── User Model ───────────────────────────────
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
+  name: { type: String, required: true, trim: true, maxlength: 100 },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
+  // ✅ Plan/Package field
+  plan: { type: String, default: 'Basic', enum: ['Basic', 'Standard', 'Premium'] },
   role: { type: String, default: "user" },
 }, { timestamps: true });
 
@@ -116,7 +118,7 @@ app.post("/api/auth/signup", async (req, res) => {
 
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, plan: user.plan },
     });
   } catch (err) {
     console.error(err);
@@ -138,11 +140,57 @@ app.post("/api/auth/login", async (req, res) => {
 
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, plan: user.plan },
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// ─── Route: Update User Plan ──────────────────
+// ✅ After signup, user can select their plan/package
+app.post("/api/auth/update-plan", async (req, res) => {
+  const { userId, plan } = req.body;
+
+  console.log("📝 [PLAN UPDATE] Incoming request:", { userId, plan });
+
+  try {
+    // ✅ Validate userId
+    if (!userId) {
+      console.warn("⚠️  [PLAN UPDATE] Missing userId");
+      return res.status(400).json({ msg: "User ID is required" });
+    }
+
+    // Validate plan
+    const validPlans = ['Basic', 'Standard', 'Premium'];
+    if (!validPlans.includes(plan)) {
+      console.warn("⚠️  [PLAN UPDATE] Invalid plan:", plan);
+      return res.status(400).json({ msg: "Invalid plan selection" });
+    }
+
+    console.log("📍 [PLAN UPDATE] Looking for user with ID:", userId);
+
+    // Update user plan
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { plan },
+      { new: true }
+    );
+
+    if (!user) {
+      console.warn("⚠️  [PLAN UPDATE] User not found:", userId);
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    console.log("✅ [PLAN UPDATE] Plan updated successfully:", { userId, plan: user.plan });
+    res.status(200).json({ 
+      msg: "Plan updated successfully", 
+      user: { id: user._id, name: user.name, email: user.email, plan: user.plan } 
+    });
+  } catch (err) {
+    console.error("❌ [PLAN UPDATE] Error updating plan:", err.message);
+    res.status(500).json({ msg: "Server error: " + err.message });
   }
 });
 

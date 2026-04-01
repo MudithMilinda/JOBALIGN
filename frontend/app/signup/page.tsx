@@ -96,7 +96,8 @@ export default function SignUpPage() {
                 // ✅ Notify Navbar (same tab) that auth state changed
                 window.dispatchEvent(new Event("auth-change"));
 
-                router.push("/#home");
+                // ✅ Redirect to pricelist to select a package
+                router.push("/pricelist");
             } else {
                 console.error("⚠️  [SIGNUP] Backend error:", data.msg);
                 alert(data.msg || "Signup failed");

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from "react";
-import { Star, LogOut, User, ChevronDown } from 'lucide-react';
+import { Star, LogOut, History, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function NavbarUI() {
@@ -144,26 +144,52 @@ export default function NavbarUI() {
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                                                 {user?.name?.charAt(0).toUpperCase()}
                                             </div>
-                                            <div className="overflow-hidden">
+                                            <div className="overflow-hidden flex-1">
                                                 <p className="text-white font-semibold text-sm truncate">{user?.name}</p>
                                                 <p className="text-white/40 text-xs truncate">{user?.email}</p>
                                             </div>
                                         </div>
                                     </div>
 
+                                    {/* Plan Display */}
+                                    {user?.plan && (
+                                        <button
+                                            onClick={() => { router.push('/pricelist'); setDropdownOpen(false); }}
+                                            className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                                        >
+                                            {/* LEFT SIDE (icon + text) */}
+                                            <div className="flex items-center gap-3">
+                                                <Star className="w-4 h-4 " />
+                                                <span className="text-white/60">Current Plan</span>
+                                            </div>
+
+                                            {/* RIGHT SIDE (badge) */}
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${user.plan === 'Premium'
+                                                        ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                                                        : user.plan === 'Standard'
+                                                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                                            : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                                                    }`}
+                                            >
+                                                {user.plan}
+                                            </span>
+                                        </button>
+                                    )}
+
                                     {/* Profile Link */}
                                     <button
                                         onClick={() => { router.push('/history'); setDropdownOpen(false); }}
                                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
                                     >
-                                        <User className="w-4 h-4" />
+                                        <History className="w-4 h-4" />
                                         History
                                     </button>
 
                                     {/* Logout */}
                                     <button
                                         onClick={handleLogout}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/10"
                                     >
                                         <LogOut className="w-4 h-4" />
                                         Logout

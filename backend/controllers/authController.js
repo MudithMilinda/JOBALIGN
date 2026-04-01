@@ -39,11 +39,54 @@ export const registerUser = async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, plan: user.plan } });
     console.log("📤 [SIGNUP] Response sent successfully for user:", user.name);
   } catch (err) {
     console.error("❌ [SIGNUP] Error during registration:", err);
     res.status(500).json({ msg: "Server error" });
+  }
+};
+
+// ✅ UPDATE PLAN function
+export const updateUserPlan = async (req, res) => {
+  const { userId, plan } = req.body;
+
+  console.log("📝 [PLAN UPDATE] Incoming request:", { userId, plan });
+
+  try {
+    // ✅ Validate userId
+    if (!userId) {
+      console.warn("⚠️  [PLAN UPDATE] Missing userId");
+      return res.status(400).json({ msg: "User ID is required" });
+    }
+
+    // Validate plan
+    const validPlans = ['Basic', 'Standard', 'Premium'];
+    if (!validPlans.includes(plan)) {
+      console.warn("⚠️  [PLAN UPDATE] Invalid plan:", plan);
+      return res.status(400).json({ msg: "Invalid plan selection" });
+    }
+
+    console.log("📍 [PLAN UPDATE] Looking for user with ID:", userId);
+
+    // Update user plan
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { plan },
+      { new: true }
+    );
+
+    if (!user) {
+      console.warn("⚠️  [PLAN UPDATE] User not found:", userId);
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    console.log("✅ [PLAN UPDATE] Plan updated successfully:", { userId, plan: user.plan });
+    res.status(200).json({ msg: "Plan updated successfully", user: { id: user._id, name: user.name, email: user.email, plan: user.plan } });
+  } catch (err) {
+    console.error("❌ [PLAN UPDATE] Error updating plan:", err.message);
+    console.error("❌ [PLAN UPDATE] Full error:", err);
+    res.status(500).json({ msg: "Server error: " + err.message });
   }
 };
 
@@ -63,13 +106,14 @@ export const loginUser = async (req, res) => {
     // Token generate
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    // ✅ user object  return  — Navbar 
+    // ✅ user object return — Navbar (includes plan)
     res.status(200).json({
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        plan: user.plan || 'Basic',
       },
     });
   } catch (err) {
