@@ -1,23 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import Script from "next/script";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-// ✅ Stripe Buy Button Type Declaration
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'stripe-buy-button': {
-        'buy-button-id': string;
-        'publishable-key': string;
-      };
-    }
-  }
-}
 
 const plans = [
   {
@@ -60,13 +47,12 @@ const plans = [
 
 export default function PricingPage() {
   const [selectedPlan, setSelectedPlan] = useState<string>("Basic");
-  const [loading, setLoading] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
-
     if (userStr) {
       try {
         const userData = JSON.parse(userStr);
@@ -85,66 +71,56 @@ export default function PricingPage() {
       return;
     }
 
-    // ✅ If already Basic → skip API
-    if (planName === "Basic" && selectedPlan === "Basic") {
-      alert("✅ Basic plan selected successfully!");
+    if (planName === "Basic") {
+      setSelectedPlan("Basic");
+      const updatedUser = { ...user, plan: "Basic" };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      alert("✅ Basic plan selected");
+      setTimeout(() => router.push("/"), 1500);
+    }
+  };
 
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
-
+  const handleCheckout = async (plan: string) => {
+    if (!user) {
+      alert("Login first");
+      router.push("/signup");
       return;
     }
 
-    setLoading(true);
-
     try {
-      const res = await fetch("http://localhost:5000/api/auth/update-plan", {
+      setLoadingPlan(plan);
+
+      const res = await fetch("http://localhost:5000/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, plan: planName }),
+        body: JSON.stringify({ userId: user.id || user._id, plan }),
       });
 
       const data = await res.json();
 
-      if (res.ok) {
-        setSelectedPlan(planName);
+      if (!res.ok) throw new Error(data.error || `Server error: ${res.status}`);
+      if (!data.url) throw new Error("No checkout URL returned");
 
-        const updatedUser = { ...user, plan: planName };
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.location.href = data.url;
 
-        alert(`✅ ${planName} plan selected successfully!`);
-
-        setTimeout(() => {
-          router.push("/");
-        }, 1500);
-      } else {
-        alert(data.msg || "Failed to select plan");
-      }
-    } catch (err) {
-      alert("Error selecting plan");
+    } catch (err: any) {
+      console.error("❌ Checkout error:", err);
+      alert(`Payment failed: ${err.message}`);
+    } finally {
+      setLoadingPlan(null);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-      
-      {/* ✅ Stripe Script */}
-      <Script async src="https://js.stripe.com/v3/buy-button.js" />
-
       <Navbar />
 
       <section className="py-30 px-6">
         <div className="max-w-6xl mx-auto text-center mb-16">
-          <h1 className="text-5xl font-bold mb-4">
-            Choose Your Plan
-          </h1>
+          <h1 className="text-5xl font-bold mb-4">Choose Your Plan</h1>
           <p className="text-slate-400 text-lg">
             Flexible pricing for every stage of your job search
           </p>
-
           {user && (
             <p className="text-violet-400 text-sm mt-2">
               👤 {user.name} | Current Plan: {selectedPlan}
@@ -156,19 +132,12 @@ export default function PricingPage() {
           {plans.map((plan, index) => (
             <div
               key={index}
-              className={`bg-white/5 border backdrop-blur-sm rounded-3xl p-8 hover:scale-105 transition-all duration-300 relative ${
+              className={`bg-white/5 border backdrop-blur-sm rounded-3xl p-8 hover:scale-105 transition-all duration-300 ${
                 selectedPlan === plan.name
-                  ? 'border-violet-500 scale-105 bg-violet-500/10'
-                  : 'border-white/10'
+                  ? "border-violet-500 scale-105 bg-violet-500/10"
+                  : "border-white/10"
               }`}
             >
-              {/* Stripe badge */}
-              {(plan.name === 'Standard' || plan.name === 'Premium') && (
-                <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-500 to-indigo-500 px-3 py-1 rounded-full text-xs font-semibold">
-                  💳 Stripe Payment
-                </div>
-              )}
-
               {/* Plan Name */}
               <div className="mb-6 flex items-center justify-between">
                 <span className={`px-4 py-1 rounded-full text-sm bg-gradient-to-r ${plan.color}`}>
@@ -200,31 +169,29 @@ export default function PricingPage() {
               </div>
 
               {/* Buttons */}
-              {plan.name === 'Standard' ? (
-                <stripe-buy-button
-                  buy-button-id="buy_btn_1THHCx3L1c0HogFY3O0UHh7J"
-                  publishable-key="pk_test_51THGoS3L1c0HogFYrOt2UXSl2Cmnv3qlPHHoWkVJ37Va7O0CAGrOUcnFWNNGXzmMkhjQLn5DH8XxOUIxG83LWP1Z00SKT9mDYP"
-                />
-              ) : plan.name === 'Premium' ? (
-                <stripe-buy-button
-                  buy-button-id="buy_btn_1THHLn3L1c0HogFYbad7czQ4"
-                  publishable-key="pk_test_51THGoS3L1c0HogFYrOt2UXSl2Cmnv3qlPHHoWkVJ37Va7O0CAGrOUcnFWNNGXzmMkhjQLn5DH8XxOUIxG83LWP1Z00SKT9mDYP"
-                />
+              {plan.name === "Standard" || plan.name === "Premium" ? (
+                <button
+                  onClick={() => handleCheckout(plan.name)}
+                  disabled={loadingPlan === plan.name}
+                  className={`w-full py-3 rounded-full font-semibold bg-gradient-to-r ${plan.color} 
+                    hover:opacity-90 transition-all hover:scale-105
+                    ${loadingPlan === plan.name ? "opacity-60 cursor-not-allowed" : ""}`}
+                >
+                  {loadingPlan === plan.name ? "⏳ Loading..." : `Subscribe ${plan.name}`}
+                </button>
               ) : (
                 <button
                   onClick={() => handleSelectPlan(plan.name)}
-                  disabled={loading}
-                  className={`w-full py-3 rounded-full font-semibold bg-gradient-to-r ${plan.color} hover:opacity-90 transition-all hover:scale-105`}
+                  disabled={loadingPlan !== null}
+                  className={`w-full py-3 rounded-full font-semibold bg-gradient-to-r ${plan.color} 
+                    hover:opacity-90 transition-all hover:scale-105`}
                 >
-                  {loading ? '⏳ Selecting...' : 'Subscribe'}
+                  Subscribe Basic
                 </button>
               )}
             </div>
           ))}
         </div>
-
-        
-       
       </section>
 
       <Footer />

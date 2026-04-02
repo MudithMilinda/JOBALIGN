@@ -43,9 +43,13 @@ export default function NavbarUI() {
         // Listen for custom "auth-change" event (fires within same tab)
         window.addEventListener("auth-change", syncAuthState);
 
+        // Listen for plan updates from payment success
+        window.addEventListener("planUpdated", syncAuthState);
+
         return () => {
             window.removeEventListener("storage", syncAuthState);
             window.removeEventListener("auth-change", syncAuthState);
+            window.removeEventListener("planUpdated", syncAuthState);
         };
     }, []);
 
@@ -166,10 +170,10 @@ export default function NavbarUI() {
                                             {/* RIGHT SIDE (badge) */}
                                             <span
                                                 className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${user.plan === 'Premium'
-                                                        ? 'bg-gradient-to-r from-purple-500 to-pink-500'
-                                                        : user.plan === 'Standard'
-                                                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
-                                                            : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                                                    : user.plan === 'Standard'
+                                                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                                        : 'bg-gradient-to-r from-cyan-500 to-blue-500'
                                                     }`}
                                             >
                                                 {user.plan}
