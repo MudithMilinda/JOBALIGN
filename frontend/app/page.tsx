@@ -123,7 +123,7 @@ export default function ResumePlatformUI() {
   ];
 
   const steps = [
-    { number: '01', title: 'Upload Resume',  description: 'Drop your resume or paste the content' },
+    { number: '01', title: 'Upload Resu',  description: 'Drop your resume or paste the content' },
     { number: '02', title: 'AI Analysis',    description: 'Get instant skill extraction and optimization tips' },
     { number: '03', title: 'Match Jobs',     description: 'Discover perfectly matched opportunities' },
     { number: '04', title: 'Track & Apply', description: 'Manage applications and get hired faster' },
