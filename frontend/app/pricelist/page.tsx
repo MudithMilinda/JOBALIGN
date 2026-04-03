@@ -6,6 +6,14 @@ import Footer from "../components/Footer";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+interface UserData {
+  id?: string;
+  _id?: string;
+  name: string;
+  email: string;
+  plan?: string;
+}
+
 const plans = [
   {
     name: "Basic",
@@ -48,29 +56,28 @@ const plans = [
 export default function PricingPage() {
   const [selectedPlan, setSelectedPlan] = useState<string>("Basic");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
-        const userData = JSON.parse(userStr);
+        const userData: UserData = JSON.parse(userStr);
         setUser(userData);
         setSelectedPlan(userData.plan || "Basic");
-      } catch (err) {
-        console.error("Error loading user:", err);
+      } catch {
+        console.error("Error loading user");
       }
     }
   }, []);
 
-  const handleSelectPlan = async (planName: string) => {
+  const handleSelectPlan = (planName: string) => {
     if (!user) {
       alert("Please sign up first");
       router.push("/signup");
       return;
     }
-
     if (planName === "Basic") {
       setSelectedPlan("Basic");
       const updatedUser = { ...user, plan: "Basic" };
@@ -86,26 +93,21 @@ export default function PricingPage() {
       router.push("/signup");
       return;
     }
-
     try {
       setLoadingPlan(plan);
-
       const res = await fetch("http://localhost:5000/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id || user._id, plan }),
       });
-
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error || `Server error: ${res.status}`);
       if (!data.url) throw new Error("No checkout URL returned");
-
       window.location.href = data.url;
-
-    } catch (err: any) {
-      console.error("❌ Checkout error:", err);
-      alert(`Payment failed: ${err.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Payment failed";
+      console.error("Checkout error:", err);
+      alert(`Payment failed: ${message}`);
     } finally {
       setLoadingPlan(null);
     }
@@ -118,9 +120,7 @@ export default function PricingPage() {
       <section className="py-30 px-6">
         <div className="max-w-6xl mx-auto text-center mb-16">
           <h1 className="text-5xl font-bold mb-4">Choose Your Plan</h1>
-          <p className="text-slate-400 text-lg">
-            Flexible pricing for every stage of your job search
-          </p>
+          <p className="text-slate-400 text-lg">Flexible pricing for every stage of your job search</p>
           {user && (
             <p className="text-violet-400 text-sm mt-2">
               👤 {user.name} | Current Plan: {selectedPlan}
@@ -130,29 +130,21 @@ export default function PricingPage() {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
-            <div
-              key={index}
+            <div key={index}
               className={`bg-white/5 border backdrop-blur-sm rounded-3xl p-8 hover:scale-105 transition-all duration-300 ${
-                selectedPlan === plan.name
-                  ? "border-violet-500 scale-105 bg-violet-500/10"
-                  : "border-white/10"
+                selectedPlan === plan.name ? "border-violet-500 scale-105 bg-violet-500/10" : "border-white/10"
               }`}
             >
-              {/* Plan Name */}
               <div className="mb-6 flex items-center justify-between">
                 <span className={`px-4 py-1 rounded-full text-sm bg-gradient-to-r ${plan.color}`}>
                   {plan.name}
                 </span>
-                {selectedPlan === plan.name && (
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                )}
+                {selectedPlan === plan.name && <CheckCircle2 className="w-5 h-5 text-green-400" />}
               </div>
 
-              {/* Price */}
               <h2 className="text-5xl font-bold mb-2">{plan.price}</h2>
               <p className="text-slate-400 mb-6">/ per month</p>
 
-              {/* Features */}
               <div className="space-y-3 mb-8">
                 {plan.features.map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -161,21 +153,16 @@ export default function PricingPage() {
                     ) : (
                       <XCircle className="text-gray-500 w-5 h-5" />
                     )}
-                    <span className={!feature.included ? "text-gray-500" : ""}>
-                      {feature.text}
-                    </span>
+                    <span className={!feature.included ? "text-gray-500" : ""}>{feature.text}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Buttons */}
               {plan.name === "Standard" || plan.name === "Premium" ? (
                 <button
                   onClick={() => handleCheckout(plan.name)}
                   disabled={loadingPlan === plan.name}
-                  className={`w-full py-3 rounded-full font-semibold bg-gradient-to-r ${plan.color} 
-                    hover:opacity-90 transition-all hover:scale-105
-                    ${loadingPlan === plan.name ? "opacity-60 cursor-not-allowed" : ""}`}
+                  className={`w-full py-3 rounded-full font-semibold bg-gradient-to-r ${plan.color} hover:opacity-90 transition-all hover:scale-105 ${loadingPlan === plan.name ? "opacity-60 cursor-not-allowed" : ""}`}
                 >
                   {loadingPlan === plan.name ? "⏳ Loading..." : `Subscribe ${plan.name}`}
                 </button>
@@ -183,8 +170,7 @@ export default function PricingPage() {
                 <button
                   onClick={() => handleSelectPlan(plan.name)}
                   disabled={loadingPlan !== null}
-                  className={`w-full py-3 rounded-full font-semibold bg-gradient-to-r ${plan.color} 
-                    hover:opacity-90 transition-all hover:scale-105`}
+                  className={`w-full py-3 rounded-full font-semibold bg-gradient-to-r ${plan.color} hover:opacity-90 transition-all hover:scale-105`}
                 >
                   Subscribe Basic
                 </button>

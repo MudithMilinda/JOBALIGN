@@ -23,21 +23,17 @@ export default function ResumePlatformUI() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [featuresInView, setFeaturesInView] = useState(false);
   const [stepsInView, setStepsInView] = useState(false);
-
-  // ✅ Live stats state
   const [userCount, setUserCount] = useState<string>('...');
   const [jobsCount, setJobsCount] = useState<string>('...');
 
   const featuresRef = useRef<HTMLDivElement | null>(null);
   const stepsRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ Format number: 1500 → "1K+", 50000 → "50K+", 999 → "999+"
   const formatCount = (count: number): string => {
     if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
     return `${count}+`;
   };
 
-  // ✅ Fetch both stats in parallel
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -45,24 +41,20 @@ export default function ResumePlatformUI() {
           fetch('http://localhost:5000/api/stats/user-count'),
           fetch('http://localhost:5000/api/stats/jobs-analyzed'),
         ]);
-
         const usersData = await usersRes.json();
         const jobsData = await jobsRes.json();
-
         setUserCount(formatCount(usersData.count));
         setJobsCount(formatCount(jobsData.count));
-      } catch (err) {
-        // Fallback values if API fails
+      } catch {
         setUserCount('10K+');
         setJobsCount('50K+');
       }
     };
-
     fetchStats();
   }, []);
 
   useEffect(() => {
-    setIsVisible(true);
+    const frame = requestAnimationFrame(() => setIsVisible(true));
 
     const handleScroll = () => setScrollY(window.scrollY);
     const handleMouseMove = (e: MouseEvent) =>
@@ -85,18 +77,18 @@ export default function ResumePlatformUI() {
     if (stepsRef.current) observer.observe(stepsRef.current);
 
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
       observer.disconnect();
     };
   }, []);
 
-  // ✅ Both stats are now dynamic
   const stats = [
-    { value: '95%',      label: 'Match Accuracy', icon: Target   },
-    { value: userCount,  label: 'Active Users',   icon: Users    },
-    { value: jobsCount,  label: 'Jobs Analyzed',  icon: BarChart3 },
-    { value: '3x',       label: 'Faster Hiring',  icon: TrendingUp },
+    { value: '95%',     label: 'Match Accuracy', icon: Target    },
+    { value: userCount, label: 'Active Users',   icon: Users     },
+    { value: jobsCount, label: 'Jobs Analyzed',  icon: BarChart3 },
+    { value: '3x',      label: 'Faster Hiring',  icon: TrendingUp },
   ];
 
   const features = [
@@ -126,23 +118,19 @@ export default function ResumePlatformUI() {
     { number: '01', title: 'Upload Resume',  description: 'Drop your resume or paste the content' },
     { number: '02', title: 'AI Analysis',    description: 'Get instant skill extraction and optimization tips' },
     { number: '03', title: 'Match Jobs',     description: 'Discover perfectly matched opportunities' },
-    { number: '04', title: 'Track & Apply', description: 'Manage applications and get hired faster' },
+    { number: '04', title: 'Track & Apply',  description: 'Manage applications and get hired faster' },
   ];
 
   const router = useRouter();
-
-  // ✅ Helper: is this stat still loading?
   const isLoading = (val: string) => val === '...';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">
-      {/* Cursor Follower */}
       <div
         className="fixed w-6 h-6 border-2 border-violet-400/50 rounded-full pointer-events-none z-50 transition-transform duration-200"
         style={{ left: `${mousePosition.x}px`, top: `${mousePosition.y}px`, transform: 'translate(-50%, -50%)' }}
       />
 
-      {/* Floating Particles */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (
           <div
@@ -158,7 +146,6 @@ export default function ResumePlatformUI() {
         ))}
       </div>
 
-      {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 -right-40 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl animate-pulse-slow"
           style={{ transform: `translateY(${scrollY * 0.3}px)` }} />
@@ -170,11 +157,9 @@ export default function ResumePlatformUI() {
 
       <Navbar />
 
-      {/* Hero Section */}
       <section id="home" className="relative z-10 px-6 pt-30 pb-32">
         <div className="max-w-7xl mx-auto text-center">
           <div className={`transition-all duration-1000 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500/20 border border-violet-500/30 rounded-full mb-8">
               <Star className="w-4 h-4 text-violet-400" />
               <span className="text-sm text-violet-300">AI-Powered Career Matching</span>
@@ -208,7 +193,6 @@ export default function ResumePlatformUI() {
               </button>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
               {stats.map((stat, index) => (
                 <div
@@ -217,8 +201,6 @@ export default function ResumePlatformUI() {
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
                   <stat.icon className="relative w-8 h-8 mx-auto mb-3 text-violet-400 group-hover:scale-110 group-hover:rotate-12 transition-all" />
-
-                  {/* ✅ Show shimmer while loading, real value after */}
                   <div className="relative text-3xl font-bold mb-1 group-hover:text-violet-300 transition-colors min-h-[2.25rem] flex items-center justify-center">
                     {isLoading(stat.value) ? (
                       <span className="inline-block w-16 h-7 bg-white/10 rounded-lg animate-pulse" />
@@ -226,17 +208,14 @@ export default function ResumePlatformUI() {
                       stat.value
                     )}
                   </div>
-
                   <div className="relative text-sm text-slate-400">{stat.label}</div>
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
       <section id="features" className="relative z-10 px-6 py-20" ref={featuresRef}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -267,7 +246,6 @@ export default function ResumePlatformUI() {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section id="how-it-works" className="relative z-10 px-6 py-20" ref={stepsRef}>
         <div className="max-w-7xl mx-auto text-center">
           <div className="mb-16">
@@ -295,7 +273,6 @@ export default function ResumePlatformUI() {
         </div>
       </section>
 
-      {/* Pricing Section */}
       <section id="pricing" className="relative z-10 px-6 py-20">
         <div className="max-w-4xl mx-auto text-center">
           <div className="relative bg-gradient-to-br from-violet-600/20 to-cyan-600/20 backdrop-blur-sm border border-violet-500/30 rounded-3xl p-12 overflow-hidden">

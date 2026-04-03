@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -22,63 +22,27 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-slate-400 text-sm">
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Features
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Pricing
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  API
-                </a>
-              </li>
+              <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">API</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-slate-400 text-sm">
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  About
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Careers
-                </a>
-              </li>
+              <li><a href="#" className="hover:text-white transition-colors">About</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-slate-400 text-sm">
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Privacy
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Terms
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Security
-                </a>
-              </li>
+              <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Terms</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
             </ul>
           </div>
         </div>
