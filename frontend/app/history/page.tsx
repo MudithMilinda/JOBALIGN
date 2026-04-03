@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import {
-  FileText, Briefcase, Lightbulb, Star, ExternalLink,
+  ExternalLink,
   ChevronDown, ChevronUp, Clock, AlertCircle, Inbox
 } from 'lucide-react';
 
@@ -192,7 +192,6 @@ export default function HistoryPage() {
                             {job.company} · {job.location}
                           </p>
 
-                          {/* FIXED LINK */}
                           <a
                             href={job.url}
                             target="_blank"

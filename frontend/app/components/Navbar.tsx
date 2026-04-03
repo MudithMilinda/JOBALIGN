@@ -39,6 +39,7 @@ export default function NavbarUI() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     syncAuthState();
     window.addEventListener("storage", syncAuthState);
     window.addEventListener("auth-change", syncAuthState);
