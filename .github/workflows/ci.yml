@@ -1,0 +1,50 @@
+name: Full CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 25.6.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 25.6.0
+
+      # ---------------- FRONTEND ----------------
+      - name: Install frontend
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Lint frontend
+        working-directory: ./frontend
+        run: npm run lint --if-present
+
+      # ---------------- BACKEND ----------------
+      - name: Install backend
+        working-directory: ./backend
+        run: npm install
+
+      - name: Test backend
+        working-directory: ./backend
+        run: npm test
+
+      - name: Lint backend
+        working-directory: ./backend
+        run: npm run lint --if-present
+
+      - name: Build backend
+        working-directory: ./backend
+        run: npm run build --if-present
