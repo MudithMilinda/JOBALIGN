@@ -17,6 +17,11 @@ import stripeRoutes from "./routes/stripeRoutes.js";
 
 dotenv.config();
 
+// 🤖 Anthropic Setup (Moved to the top to fix initialization error)
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -34,11 +39,16 @@ if (!fs.existsSync("uploads")) {
 }
 
 // ─────────────────────────────────────────────
-// 🌐 CORS
+// 🌐 CORS (Updated to support Vercel Frontend & Localhost)
 // ─────────────────────────────────────────────
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: [
+      process.env.CLIENT_URL,
+      "http://localhost:3000",
+      "http://localhost:3001",
+    ].filter(Boolean),
+    credentials: true,
   }),
 );
 
@@ -221,7 +231,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// ✅ Get Current User (success page plan sync සඳහා)
+// ✅ Get Current User
 app.get("/api/auth/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select("-password");
@@ -239,7 +249,7 @@ app.get("/api/auth/me", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ Update User Plan (called after payment success from frontend)
+// ✅ Update User Plan
 app.post("/api/auth/update-plan", authMiddleware, async (req, res) => {
   try {
     const { plan } = req.body;
@@ -434,13 +444,6 @@ app.use("/api/analysis", analysisRoutes);
 // 💳 Stripe Routes
 // ─────────────────────────────────────────────
 app.use("/api/stripe", stripeRoutes);
-
-// ─────────────────────────────────────────────
-// 🤖 Anthropic Setup
-// ─────────────────────────────────────────────
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 // ─────────────────────────────────────────────
 // 🚀 Start Server
