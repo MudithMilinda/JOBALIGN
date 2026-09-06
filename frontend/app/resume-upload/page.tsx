@@ -34,7 +34,7 @@ interface AnalysisResult {
   jobs: Job[];
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   all: 'All',
@@ -47,17 +47,17 @@ const JOB_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function ResumeUploadPage() {
-  const [isDragging, setIsDragging]         = useState(false);
-  const [file, setFile]                     = useState<File | null>(null);
-  const [analyzing, setAnalyzing]           = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [progressLabel, setProgressLabel]   = useState('Uploading CV...');
-  const [result, setResult]                 = useState<AnalysisResult | null>(null);
-  const [error, setError]                   = useState('');
-  const [activeFilter, setActiveFilter]     = useState('all');
-  const [saveStatus, setSaveStatus]         = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [progressLabel, setProgressLabel] = useState('Uploading CV...');
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [error, setError] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  const handleDragOver  = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = () => setIsDragging(false);
 
   const handleDrop = (e: React.DragEvent) => {
@@ -110,9 +110,9 @@ export default function ResumeUploadPage() {
         body: JSON.stringify({
           fileName,
           candidateSummary: analysisResult.candidateSummary,
-          topSkills:        analysisResult.topSkills,
-          resumeTips:       analysisResult.resumeTips,
-          jobs:             analysisResult.jobs,
+          topSkills: analysisResult.topSkills,
+          resumeTips: analysisResult.resumeTips,
+          jobs: analysisResult.jobs,
         }),
       });
 
@@ -227,9 +227,8 @@ export default function ResumeUploadPage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`relative bg-white/5 backdrop-blur-sm border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 ${
-                  isDragging ? 'border-violet-500 bg-violet-500/10 scale-105' : 'border-white/20 hover:border-violet-500/50'
-                }`}
+                className={`relative bg-white/5 backdrop-blur-sm border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 ${isDragging ? 'border-violet-500 bg-violet-500/10 scale-105' : 'border-white/20 hover:border-violet-500/50'
+                  }`}
               >
                 {!file && !analyzing && (
                   <div className="space-y-6">
@@ -370,11 +369,10 @@ export default function ResumeUploadPage() {
                   <button
                     key={type}
                     onClick={() => setActiveFilter(type)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
-                      activeFilter === type
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${activeFilter === type
                         ? 'bg-violet-500/30 border-violet-500/50 text-violet-300'
                         : 'border-white/10 text-slate-400 hover:border-white/20'
-                    }`}
+                      }`}
                   >
                     {JOB_TYPE_LABELS[type] ?? type}
                     {type === 'all'
@@ -392,11 +390,10 @@ export default function ResumeUploadPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-semibold text-sm leading-snug">{job.title}</p>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 flex items-center gap-1 ${
-                        job.matchQuality === 'Strong fit'
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 flex items-center gap-1 ${job.matchQuality === 'Strong fit'
                           ? 'bg-green-500/15 text-green-400 border border-green-500/20'
                           : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
-                      }`}>
+                        }`}>
                         <Star className="w-3 h-3" />
                         {job.matchQuality}
                       </span>

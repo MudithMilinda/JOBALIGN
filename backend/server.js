@@ -41,13 +41,23 @@ if (!fs.existsSync("uploads")) {
 // ─────────────────────────────────────────────
 // 🌐 CORS (Updated to support Vercel Frontend & Localhost)
 // ─────────────────────────────────────────────
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  ...(process.env.CLIENT_URLS || "").split(","),
+  "http://localhost:3000",
+  "http://localhost:3001",
+]
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_URL,
-      "http://localhost:3000",
-      "http://localhost:3001",
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
+        return callback(null, true);
+      }
+      return callback(new Error("Origin is not allowed by CORS"));
+    },
     credentials: true,
   }),
 );

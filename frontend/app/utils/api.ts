@@ -1,5 +1,5 @@
 export const createCheckout = async (userId: string, plan: string) => {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "");
   
   const res = await fetch(`${backendUrl}/api/stripe/create-checkout-session`, {
     method: "POST",
