@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -95,7 +97,7 @@ export default function PricingPage() {
     }
     try {
       setLoadingPlan(plan);
-      const res = await fetch("http://localhost:5000/api/stripe/create-checkout-session", {
+      const res = await fetch(`${BACKEND_URL}/api/stripe/create-checkout-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id || user._id, plan }),
@@ -131,9 +133,8 @@ export default function PricingPage() {
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <div key={index}
-              className={`bg-white/5 border backdrop-blur-sm rounded-3xl p-8 hover:scale-105 transition-all duration-300 ${
-                selectedPlan === plan.name ? "border-violet-500 scale-105 bg-violet-500/10" : "border-white/10"
-              }`}
+              className={`bg-white/5 border backdrop-blur-sm rounded-3xl p-8 hover:scale-105 transition-all duration-300 ${selectedPlan === plan.name ? "border-violet-500 scale-105 bg-violet-500/10" : "border-white/10"
+                }`}
             >
               <div className="mb-6 flex items-center justify-between">
                 <span className={`px-4 py-1 rounded-full text-sm bg-gradient-to-r ${plan.color}`}>

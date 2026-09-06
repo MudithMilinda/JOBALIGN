@@ -105,6 +105,10 @@ app.post(
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/", (req, res) => {
+  res.json({ status: "ok", service: "JobAlign API" });
+});
+
 // ─────────────────────────────────────────────
 // 🗄️ MongoDB Connection
 // ─────────────────────────────────────────────

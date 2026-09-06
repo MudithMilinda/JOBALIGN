@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
 interface SuccessModalProps {
   onClose?: () => void;
 }
@@ -28,7 +30,7 @@ export default function SuccessModal({ onClose }: SuccessModalProps) {
 
     try {
       if (boughtPlan && ['Basic', 'Standard', 'Premium'].includes(boughtPlan)) {
-        const updateRes = await fetch("http://localhost:5000/api/auth/update-plan", {
+        const updateRes = await fetch(`${BACKEND_URL}/api/auth/update-plan`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -49,7 +51,7 @@ export default function SuccessModal({ onClose }: SuccessModalProps) {
         }
       }
 
-      const res = await fetch("http://localhost:5000/api/auth/me", {
+      const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -88,8 +90,8 @@ export default function SuccessModal({ onClose }: SuccessModalProps) {
     plan === "Premium"
       ? "bg-gradient-to-r from-purple-500 to-pink-500"
       : plan === "Standard"
-      ? "bg-gradient-to-r from-blue-500 to-indigo-500"
-      : "bg-gradient-to-r from-cyan-500 to-blue-500";
+        ? "bg-gradient-to-r from-blue-500 to-indigo-500"
+        : "bg-gradient-to-r from-cyan-500 to-blue-500";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">

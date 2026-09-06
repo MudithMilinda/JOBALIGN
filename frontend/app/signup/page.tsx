@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
 const passwordStrength = (password: string) => {
   let score = 0;
   if (password.length >= 8) score++;
@@ -66,7 +68,7 @@ export default function SignUpPage() {
     if (!validate()) return;
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
+      const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),

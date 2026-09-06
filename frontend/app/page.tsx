@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
 export default function ResumePlatformUI() {
   const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -38,8 +40,8 @@ export default function ResumePlatformUI() {
     const fetchStats = async () => {
       try {
         const [usersRes, jobsRes] = await Promise.all([
-          fetch('http://localhost:5000/api/stats/user-count'),
-          fetch('http://localhost:5000/api/stats/jobs-analyzed'),
+          fetch(`${BACKEND_URL}/api/stats/user-count`),
+          fetch(`${BACKEND_URL}/api/stats/jobs-analyzed`),
         ]);
         const usersData = await usersRes.json();
         const jobsData = await jobsRes.json();
@@ -85,10 +87,10 @@ export default function ResumePlatformUI() {
   }, []);
 
   const stats = [
-    { value: '95%',     label: 'Match Accuracy', icon: Target    },
-    { value: userCount, label: 'Active Users',   icon: Users     },
-    { value: jobsCount, label: 'Jobs Analyzed',  icon: BarChart3 },
-    { value: '3x',      label: 'Faster Hiring',  icon: TrendingUp },
+    { value: '95%', label: 'Match Accuracy', icon: Target },
+    { value: userCount, label: 'Active Users', icon: Users },
+    { value: jobsCount, label: 'Jobs Analyzed', icon: BarChart3 },
+    { value: '3x', label: 'Faster Hiring', icon: TrendingUp },
   ];
 
   const features = [
@@ -115,10 +117,10 @@ export default function ResumePlatformUI() {
   ];
 
   const steps = [
-    { number: '01', title: 'Upload Resume',  description: 'Drop your resume or paste the content' },
-    { number: '02', title: 'AI Analysis',    description: 'Get instant skill extraction and optimization tips' },
-    { number: '03', title: 'Match Jobs',     description: 'Discover perfectly matched opportunities' },
-    { number: '04', title: 'Track & Apply',  description: 'Manage applications and get hired faster' },
+    { number: '01', title: 'Upload Resume', description: 'Drop your resume or paste the content' },
+    { number: '02', title: 'AI Analysis', description: 'Get instant skill extraction and optimization tips' },
+    { number: '03', title: 'Match Jobs', description: 'Discover perfectly matched opportunities' },
+    { number: '04', title: 'Track & Apply', description: 'Manage applications and get hired faster' },
   ];
 
   const router = useRouter();
@@ -230,9 +232,8 @@ export default function ResumePlatformUI() {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className={`group bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:border-violet-500/50 transition-all hover:scale-[1.02] relative overflow-hidden ${
-                  featuresInView ? (index % 2 === 0 ? 'animate-slide-in-left' : 'animate-slide-in-right') : 'opacity-0'
-                }`}
+                className={`group bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:border-violet-500/50 transition-all hover:scale-[1.02] relative overflow-hidden ${featuresInView ? (index % 2 === 0 ? 'animate-slide-in-left' : 'animate-slide-in-right') : 'opacity-0'
+                  }`}
                 style={{ animationDelay: `${index * 150}ms` }}
               >
                 <div className="relative w-14 h-14 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
